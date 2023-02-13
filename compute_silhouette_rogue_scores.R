@@ -1,5 +1,5 @@
 
-compute_silhouette_rogue_scores <- function(seurat,res.from=.1, res.to=.8, by=.05,plot=T, plot.prefix=""){
+compute_silhouette_rogue_scores <- function(seurat,res.from=.1, res.to=.8, by=.05,plot=T){
   
   if(system.file(package="ROGUE") == ""){
     devtools::install_github("PaulingLiu/ROGUE")
@@ -12,11 +12,16 @@ compute_silhouette_rogue_scores <- function(seurat,res.from=.1, res.to=.8, by=.0
   library(tidyverse)
   library(Seurat)
   
+  
+  if(plot){
+    dir.create("silhouette_rogue_plots")
+  }
+  
   #
   # Silhouette
   #
   
-  cat(paste0("Using assay: ",DefaultAssay(seurat),"\nUpdate your object before applying the function if you want to use another one."))
+  cat(paste0("Using assay: ",DefaultAssay(seurat),"\nUpdate your object before applying the function if you want to use another one.\n"))
   
   
   expr <- as.matrix(GetAssayData(seurat))
@@ -36,15 +41,18 @@ compute_silhouette_rogue_scores <- function(seurat,res.from=.1, res.to=.8, by=.0
     # ROGUE
     rogue.res <- rogue(expr, labels = clusters, samples = seurat$orig.ident, platform = "UMI", span = 1.6)
     
+    # PLOTTING 
     if(plot){
-      filename=paste0(plot.prefix,"silhouette.res=",resolution,".png")
-      png(filename)
+      filename.sil=paste0("silhouette_rogue_plots/silhouette.res=",resolution,".png")
+      png(filename.sil)
       plot(sil, border = NA)
       dev.off()
+      cat("Plotted to: ",filename.sil,"\n")
       
+      filename.rogue = paste0("silhouette_rogue_plots/rogue.res=",resolution,".png")
       rogue.bp <- rogue.boxplot(rogue.res)
-      ggsave(plot = rogue.bp,filename = paste0(plot.prefix,"rogue.res=",resolution,".png"))
-      cat("Plotted to: ",filename,"\n")
+      ggsave(plot = rogue.bp,filename = filename.rogue)
+      cat("Plotted to: ",filename.rogue,"\n")
     }
     
     
@@ -63,15 +71,8 @@ compute_silhouette_rogue_scores <- function(seurat,res.from=.1, res.to=.8, by=.0
     ggplot(sil.results,aes(x=factor(Resolution),y=nClusters))+geom_bar(stat="identity")+theme_cowplot()+xlab("Resolution"),
     ncol=1)
   
-  ggsave(paste0(plot.prefix,"silhouette_results.pdf"),w=8,h=6)
-  cat("Combined results plotted to silhouette_results.pdf.\n")
-  
-  #
-  # ROGUE
-  #
-  
-
-  
+  ggsave(paste0("silhouette_rogue_plots/silhouette_results.pdf"),w=8,h=6)
+  cat("Combined results plotted to silhouette_rogue_plots/silhouette_results.pdf.\n")
   
   
   return(sil.results)
